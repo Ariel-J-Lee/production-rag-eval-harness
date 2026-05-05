@@ -1,0 +1,53 @@
+# Public CI for production-rag-eval-harness — shell stage
+#
+# At shell creation, public CI runs license-check and link-rot only.
+# Composition-check, smoke tests, and regression gate are placeholder
+# job names; they activate when the v1 implementation packets land
+# the underlying make targets.
+
+name: public-ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  license-check:
+    name: License presence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify LICENSE is Apache 2.0
+        run: |
+          if [ ! -f LICENSE ]; then
+            echo "FAIL: LICENSE file missing"
+            exit 1
+          fi
+          if ! grep -q "Apache License" LICENSE; then
+            echo "FAIL: LICENSE does not contain 'Apache License'"
+            exit 1
+          fi
+          echo "PASS: LICENSE present and references Apache License"
+
+  link-rot-check:
+    name: Markdown link rot (warn-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check markdown links
+        continue-on-error: true
+        run: |
+          # Placeholder. v1 implementation packet wires a link-checker tool.
+          echo "Link-rot check: placeholder. v1 implementation will wire a link-checker."
+
+  composition-check:
+    name: Composition deviation (placeholder)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Composition check placeholder
+        run: |
+          echo "Composition check: placeholder. v1 implementation packet enables make composition-check."
+          echo "PASS (placeholder)"

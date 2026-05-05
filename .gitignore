@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Corpus blobs (committed via DATA-SOURCE.md attestation only when materialized)
+data/*/
+!data/README.md
+!data/DATA-SOURCE.md
+!data/LICENSE.*
+
+# Run output blobs (committed run reports + manifests + raw_results stay tracked
+# at v1; large captured artifacts may be ignored when they exceed reasonable size)
+runs/**/large_artifacts/
+
+# Local environment
+.env
+.env.local
