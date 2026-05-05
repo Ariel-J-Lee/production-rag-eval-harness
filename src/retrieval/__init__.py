@@ -12,13 +12,15 @@ Public exports:
   ``scripts/fetch_corpus.py``
 - :class:`DenseRetriever` — local-CPU sentence-transformer + in-process
   cosine implementation of mode 1
+- :class:`SparseRetriever` — pure-stdlib BM25 implementation of mode 2
 
-Sparse, hybrid, and graph-aware retrievers ship in subsequent slices and
-import :class:`RetrievalHit` and :func:`load_chunks` from this package.
+Hybrid and graph-aware retrievers ship in subsequent slices and import
+:class:`RetrievalHit` and :func:`load_chunks` from this package.
 """
 
 from src.retrieval._corpus import load_chunks
 from src.retrieval.dense import DenseRetriever
+from src.retrieval.sparse import SparseRetriever
 from src.retrieval.types import RetrievalHit
 
-__all__ = ["DenseRetriever", "RetrievalHit", "load_chunks"]
+__all__ = ["DenseRetriever", "RetrievalHit", "SparseRetriever", "load_chunks"]
