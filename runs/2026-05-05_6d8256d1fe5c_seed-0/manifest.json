@@ -1,0 +1,79 @@
+{
+  "run_id": "2026-05-05_6d8256d1fe5c_seed-0",
+  "captured_at": "2026-05-05T23:47:21Z",
+  "seed": 0,
+  "modes": [
+    "dense",
+    "sparse",
+    "hybrid",
+    "graph_aware"
+  ],
+  "citation_count": 3,
+  "embedding_model": "all-MiniLM-L6-v2",
+  "corpus": {
+    "chunks_path": "data/oss-ecosystem/chunks.jsonl",
+    "chunks_count": 1659,
+    "chunks_sha256": "6d8256d1fe5c3744aaab500c3ce1f513b363e4c9156b243b19eeb6747d6a28c8"
+  },
+  "qa": {
+    "path": "qa/qa_pairs.jsonl",
+    "count": 20,
+    "sha256": "5568e875569df859f082b8532621fe489b421aac3936b1cc13942f06daef5430"
+  },
+  "method": {
+    "faithfulness": "heuristic_token_overlap_binary",
+    "faithfulness_threshold": 0.6,
+    "answer_correctness": "token_f1",
+    "answer_generation": "extractive_top_k_passages_joined"
+  },
+  "regression_gate": {
+    "verdict": "not_evaluated",
+    "note": "Regression gate is a v1+ follow-on per PACKET-043 forbidden-surface rule ('No regression-gate or CI expansion beyond the first scored run')."
+  },
+  "per_mode_aggregates": {
+    "dense": {
+      "recall_at_5": 0.16010153186270762,
+      "recall_at_10": 0.27262371349817766,
+      "mrr": 0.95,
+      "citation_precision": 0.8833333333333334,
+      "citation_recall": 0.10576505990437404,
+      "faithfulness": 1.0,
+      "answer_correctness": 0.027443012123801798,
+      "exact_match": 0.0
+    },
+    "sparse": {
+      "recall_at_5": 0.11786003219071192,
+      "recall_at_10": 0.20324179219433353,
+      "mrr": 0.8166666666666667,
+      "citation_precision": 0.6166666666666666,
+      "citation_recall": 0.07213227240202133,
+      "faithfulness": 1.0,
+      "answer_correctness": 0.026543836296188554,
+      "exact_match": 0.0
+    },
+    "hybrid": {
+      "recall_at_5": 0.15605221885687287,
+      "recall_at_10": 0.2828965235621696,
+      "mrr": 0.95,
+      "citation_precision": 0.85,
+      "citation_recall": 0.1010031551424693,
+      "faithfulness": 1.0,
+      "answer_correctness": 0.0256912822392747,
+      "exact_match": 0.0
+    },
+    "graph_aware": {
+      "recall_at_5": 0.07309821022007182,
+      "recall_at_10": 0.1078423831730629,
+      "mrr": 0.5,
+      "citation_precision": 0.4333333333333333,
+      "citation_recall": 0.04603721324603137,
+      "faithfulness": 0.5,
+      "answer_correctness": 0.011191615883789117,
+      "exact_match": 0.0
+    }
+  },
+  "diagnostics": {
+    "questions_with_unresolved_hint": 3,
+    "total_unresolved_hints": 3
+  }
+}
