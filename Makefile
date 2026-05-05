@@ -1,25 +1,30 @@
-# production-rag-eval-harness — shell-only Makefile
+# production-rag-eval-harness — Makefile
 #
-# Each target prints "not yet implemented" and exits non-zero. The v1
-# implementation packets land the actual targets per ROADMAP.md.
+# Targets land per the v1 implementation slices documented in ROADMAP.md.
+# Implemented targets run real work; not-yet-implemented targets print
+# "not yet implemented" and exit non-zero.
 
-.PHONY: smoke eval regression fetch composition-check help
+.PHONY: smoke smoke-dense eval regression fetch composition-check help
 
 help:
-	@echo "production-rag-eval-harness — shell-only"
+	@echo "production-rag-eval-harness"
 	@echo ""
-	@echo "Available targets (all not yet implemented):"
-	@echo "  smoke              — smoke tests per retrieval mode (tracks ROADMAP G2)"
-	@echo "  eval               — full evaluation across all four modes (tracks ROADMAP G1, G2, G7)"
-	@echo "  regression         — regression gate against committed baseline (tracks ROADMAP G8)"
+	@echo "Available targets:"
 	@echo "  fetch              — corpus fetch via scripts/fetch_corpus.py (Wikidata + Wikipedia OSS slice; tracks ROADMAP G4)"
-	@echo "  composition-check  — verify B7 deviation set against private composition (tracks ROADMAP G10)"
+	@echo "  smoke-dense        — dense retrieval smoke against an in-tree fixture (tracks ROADMAP G2; needs 'pip install -r requirements.txt')"
+	@echo "  smoke              — aggregated smoke tests per retrieval mode — not yet implemented (tracks ROADMAP G2)"
+	@echo "  eval               — full evaluation across all four modes — not yet implemented (tracks ROADMAP G1, G2, G7)"
+	@echo "  regression         — regression gate against committed baseline — not yet implemented (tracks ROADMAP G8)"
+	@echo "  composition-check  — verify B7 deviation set against private composition — not yet implemented (tracks ROADMAP G10)"
 	@echo ""
-	@echo "Status: shell-only. See ROADMAP.md for the eleven hard gates."
+	@echo "Status: dense retrieval (mode 1) is the first runnable mode. See ROADMAP.md for the eleven hard gates."
 
 smoke:
 	@echo "make smoke: not yet implemented; tracks at ROADMAP.md gate G2."
 	@exit 2
+
+smoke-dense:
+	@python3 -m src.retrieval.dense --smoke
 
 eval:
 	@echo "make eval: not yet implemented; tracks at ROADMAP.md gates G1, G2, G7."
