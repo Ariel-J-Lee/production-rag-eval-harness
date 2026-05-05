@@ -1,0 +1,16 @@
+# production-rag-eval-harness — runtime dependencies
+#
+# One repo-level requirements file with explicit pins. Add a new line for
+# each direct dependency a retrieval mode introduces; do not pull in a
+# managed-service client. Local-first execution is a v1 commitment per
+# docs/architecture.md.
+#
+# Install with:
+#
+#     python3 -m pip install -r requirements.txt
+#
+# A virtual environment is recommended (`.venv/` is gitignored).
+
+# Dense retrieval (mode 1) — sentence-transformer embeddings + numpy cosine.
+sentence-transformers==3.3.1
+numpy==1.26.4
