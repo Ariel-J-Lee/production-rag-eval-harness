@@ -12,7 +12,7 @@ help:
 	@echo "  smoke              — smoke tests per retrieval mode (tracks ROADMAP G2)"
 	@echo "  eval               — full evaluation across all four modes (tracks ROADMAP G1, G2, G7)"
 	@echo "  regression         — regression gate against committed baseline (tracks ROADMAP G8)"
-	@echo "  fetch              — corpus fetch via scripts/fetch_corpus.py (tracks ROADMAP G4)"
+	@echo "  fetch              — corpus fetch via scripts/fetch_corpus.py (Wikidata + Wikipedia OSS slice; tracks ROADMAP G4)"
 	@echo "  composition-check  — verify B7 deviation set against private composition (tracks ROADMAP G10)"
 	@echo ""
 	@echo "Status: shell-only. See ROADMAP.md for the eleven hard gates."
@@ -30,8 +30,7 @@ regression:
 	@exit 2
 
 fetch:
-	@echo "make fetch: not yet implemented; tracks at ROADMAP.md gate G4."
-	@exit 2
+	@python3 scripts/fetch_corpus.py --out-dir data/oss-ecosystem
 
 composition-check:
 	@echo "make composition-check: not yet implemented; tracks at ROADMAP.md gate G10."
