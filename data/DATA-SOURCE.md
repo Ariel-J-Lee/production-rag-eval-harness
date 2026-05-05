@@ -1,6 +1,6 @@
 # Corpus Data Source Attestation
 
-This document attests the provenance and license posture of the corpus fetched by `scripts/fetch_corpus.py`. The fetched corpus itself is **not committed to this repository**; only this attestation, the two corpus license files in `data/`, the seed-list-bearing fetch script, and `data/README.md` live in version control. The `data/<corpus>/` subdirectory is gitignored at the repo root via `data/*/` with an allowlist for the metadata files.
+This document attests the provenance, chunking, and license posture of the corpus fetched and chunked by `scripts/fetch_corpus.py`. The fetched corpus and its derived chunked passages are **not committed to this repository**; only this attestation, the two corpus license files in `data/`, the seed-list-bearing fetch script, and `data/README.md` live in version control. The `data/<corpus>/` subdirectory is gitignored at the repo root via `data/*/` with an allowlist for the metadata files.
 
 ## Corpus identity
 
@@ -42,6 +42,33 @@ This document attests the provenance and license posture of the corpus fetched b
 | `reconstruction_check` | the seed list is hand-curated from public knowledge of the open-source software ecosystem. No private corpus, private example, or private parameter source was used. |
 | `size_bytes_committed` | 0 corpus bytes committed to the repository. The corpus lives at the gitignored output directory; only this attestation, the two license files, and the fetch script (with the seed list inline) are in version control. |
 
+## Chunking
+
+`scripts/fetch_corpus.py` chunks the fetched Wikipedia article text into stable passage units that downstream dense, sparse, hybrid, and graph-aware retrievers consume. The chunker is paragraph-aware character chunking with tail overlap, pure-stdlib, and deterministic given the article texts and chunking parameters.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `target_chars` | 600 | Approximate maximum character count per chunk before emitting |
+| `overlap_chars` | 100 | Tail of the previous chunk carried as the start of the next chunk so retrievers can find span-overlapping evidence near the seam |
+| Strategy | `paragraph-aware character chunking with tail overlap` | Splits article extract on paragraph boundaries (`\n\n`), accumulates paragraphs until the running chunk exceeds `target_chars`, emits, and seeds the next chunk with the tail |
+
+Each chunk is emitted to `data/<out-dir>/chunks.jsonl` as a single JSON object per line:
+
+```
+{
+  "passage_id": "Q123:0000",
+  "wikidata_id": "Q123",
+  "title": "Example article",
+  "chunk_index": 0,
+  "char_count": 540,
+  "text": "..."
+}
+```
+
+`passage_id` is stable: the stem is the article's Wikidata Q-ID (immutable across page renames) when one is available, falling back to a sanitized title otherwise; the suffix is the four-digit chunk index. Downstream T-DENSE, T-SPARSE, T-HYBRID, T-GRAPH retrievers index against `passage_id` and emit `{passage_id, score, source_mode}` for the eval harness; T-EVAL's citation-grounding contract uses `passage_id` as the citation target.
+
+The chunked-passage manifest field (`manifest.json.chunking`) records the strategy, parameters, total chunk count, and total chunk char count per fetch run.
+
 ## Share-alike isolation (Wikipedia CC-BY-SA-4.0)
 
 The CC-BY-SA-4.0 share-alike obligation that comes with Wikipedia article text is isolated to the corpus subdirectory:
@@ -54,7 +81,7 @@ This pattern follows the documented isolation rule from the project's publicatio
 
 ## What is NOT committed at this slice
 
-- No corpus blobs (no fetched Wikipedia article text, no fetched Wikidata entity facts, no fetched 1-hop neighborhoods, no manifest from a real fetch run).
+- No corpus blobs (no fetched Wikipedia article text, no fetched Wikidata entity facts, no fetched 1-hop neighborhoods, **no chunked-passage output**, no manifest from a real fetch run).
 - No Q-A set (lands in a future T-QA packet).
 - No retriever code (lands in future T-DENSE / T-SPARSE / T-HYBRID / T-GRAPH packets).
 - No eval harness or scored runs (lands in a future T-EVAL packet).

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Deterministic corpus fetch for the first runnable proof of
+"""Deterministic corpus fetch and chunking for the first runnable proof of
 production-rag-eval-harness.
 
 Fetches a Wikidata + Wikipedia slice scoped to the open-source software
 ecosystem (~50 seed entities plus their 1-hop Wikidata neighborhoods,
-hard-capped at 500 articles per the first-proof slice cap).
+hard-capped at 500 articles per the first-proof slice cap), then chunks
+the fetched article text into stable passage units that downstream dense,
+sparse, hybrid, and graph-aware retrievers consume.
 
 Sources
 -------
@@ -12,11 +14,24 @@ Sources
 - Wikidata content under CC0 1.0 Universal — see ``data/LICENSE.wikidata``.
 
 Both are accessed via public APIs without authentication. The fetched
-corpus is written under ``--out-dir`` (default ``data/oss-ecosystem``)
-which is gitignored at the repo root via the ``data/*/`` pattern with
-allowlist for ``data/README.md``, ``data/DATA-SOURCE.md``, and
-``data/LICENSE.*``. Only this script, the seed list (inline below), and
-the four attestation/license files live in version control.
+corpus and the derived chunks are written under ``--out-dir`` (default
+``data/oss-ecosystem``) which is gitignored at the repo root via the
+``data/*/`` pattern with allowlist for ``data/README.md``,
+``data/DATA-SOURCE.md``, and ``data/LICENSE.*``. Only this script, the
+seed list (inline below), and the four attestation/license files live in
+version control.
+
+Output files (all under ``--out-dir``):
+
+- ``articles.jsonl`` — one JSON object per article: ``{title, wikidata_id, extract, url}``.
+- ``entities.jsonl`` — one JSON object per Wikidata entity: ``{wikidata_id, label, claims[]}``.
+- ``chunks.jsonl`` — one JSON object per chunked passage:
+  ``{passage_id, wikidata_id, title, chunk_index, char_count, text}``.
+  ``passage_id`` is stable, derived from the source article identifier
+  and the chunk index, suitable as a citation target by downstream
+  retrievers and the eval harness.
+- ``manifest.json`` — captured-at timestamp, per-file byte / line / SHA-256
+  accounting, chunking parameters, and counts.
 
 Usage
 -----
@@ -27,9 +42,9 @@ Usage
     python scripts/fetch_corpus.py --out-dir data/oss-ecosystem [--limit N] [--delay S]
 
 The script uses the Python standard library only. It paces requests
-(``--delay``, default 1.0s) to be courteous to the public APIs. A
-manifest with byte counts and SHA-256 digests is written under the
-output directory at the end of each fetch run.
+(``--delay``, default 1.0s) to be courteous to the public APIs. The
+manifest is deterministic given the seed list, chunking parameters, and
+the upstream Wikipedia / Wikidata snapshot at fetch time.
 """
 
 from __future__ import annotations
@@ -55,6 +70,12 @@ USER_AGENT = (
 # corpus commitment: instance-of, developer, programmed-in, license,
 # operating-system, language-of-work.
 RELATIONAL_PROPERTIES = ["P31", "P178", "P277", "P275", "P306", "P407"]
+
+# Chunking parameters per PACKET-034 §1.1 + §5.2: paragraph-aware
+# character chunking with overlap. Stable, deterministic, stdlib-only.
+CHUNK_TARGET_CHARS = 600
+CHUNK_OVERLAP_CHARS = 100
+CHUNK_STRATEGY = "paragraph-aware character chunking with tail overlap"
 
 # Seed list — well-known open-source software projects, programming
 # languages, tooling ecosystems, and contributing organizations. Each
@@ -179,6 +200,77 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
+def chunk_article_text(
+    article: dict,
+    target_chars: int = CHUNK_TARGET_CHARS,
+    overlap_chars: int = CHUNK_OVERLAP_CHARS,
+) -> list[dict]:
+    """Split an article's plain-text extract into stable, overlapping chunks.
+
+    Splits on paragraph boundaries (``\\n\\n``) and accumulates paragraphs
+    until the running chunk exceeds ``target_chars``. Emits the chunk and
+    carries the last ``overlap_chars`` of the chunk as the start of the
+    next chunk so retrievers can find span-overlapping evidence near the
+    seam.
+
+    Returns a list of dicts shaped:
+
+        {
+            "passage_id": str,   # stable: "<wikidata_id-or-title>:<NNNN>"
+            "wikidata_id": str | None,
+            "title": str,
+            "chunk_index": int,
+            "char_count": int,
+            "text": str,
+        }
+
+    Pure-stdlib, deterministic, no model tokenizer required.
+    """
+    text = (article.get("extract") or "").strip()
+    title = article.get("title", "")
+    wikidata_id = article.get("wikidata_id")
+
+    if not text:
+        return []
+
+    # Stable id stem: prefer wikidata_id (immutable across page renames);
+    # fall back to a sanitized title for articles without a Q-ID.
+    if wikidata_id:
+        id_stem = wikidata_id
+    else:
+        id_stem = "".join(c if c.isalnum() or c in "-_" else "_" for c in title) or "untitled"
+
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+
+    chunk_texts: list[str] = []
+    current = ""
+
+    for para in paragraphs:
+        # If adding this paragraph would exceed the target, emit the
+        # current chunk first and seed the next chunk with the tail.
+        if current and len(current) + 2 + len(para) > target_chars:
+            chunk_texts.append(current.strip())
+            tail = current[-overlap_chars:] if len(current) > overlap_chars else ""
+            current = (tail + "\n\n" + para).strip() if tail else para
+            continue
+        current = (current + "\n\n" + para) if current else para
+
+    if current.strip():
+        chunk_texts.append(current.strip())
+
+    return [
+        {
+            "passage_id": f"{id_stem}:{idx:04d}",
+            "wikidata_id": wikidata_id,
+            "title": title,
+            "chunk_index": idx,
+            "char_count": len(chunk),
+            "text": chunk,
+        }
+        for idx, chunk in enumerate(chunk_texts)
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Fetch the first-proof corpus slice for production-rag-eval-harness",
@@ -212,6 +304,7 @@ def main() -> int:
 
     articles_path = out / "articles.jsonl"
     entities_path = out / "entities.jsonl"
+    chunks_path = out / "chunks.jsonl"
     manifest_path = out / "manifest.json"
 
     print(
@@ -225,6 +318,7 @@ def main() -> int:
 
     seed_qids: set[str] = set()
     article_count = 0
+    fetched_articles: list[dict] = []
 
     # Step 1: Wikipedia articles + Wikidata Q-ID resolution per seed.
     with articles_path.open("w", encoding="utf-8") as af:
@@ -245,10 +339,32 @@ def main() -> int:
             qid = article.get("wikidata_id")
             if qid:
                 seed_qids.add(qid)
+            fetched_articles.append(article)
             print(
                 f"  [{article_count:3d}] {seed} -> {qid}",
                 file=sys.stderr,
             )
+
+    # Step 1b: Chunk every fetched article into stable passage units.
+    # Pure-stdlib post-processing; no API calls; deterministic given the
+    # article texts and chunking parameters.
+    chunk_count = 0
+    total_chunk_chars = 0
+    print(
+        f"\nChunking {len(fetched_articles)} articles "
+        f"(target={CHUNK_TARGET_CHARS}c, overlap={CHUNK_OVERLAP_CHARS}c)...",
+        file=sys.stderr,
+    )
+    with chunks_path.open("w", encoding="utf-8") as cf:
+        for article in fetched_articles:
+            for chunk in chunk_article_text(article):
+                cf.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                chunk_count += 1
+                total_chunk_chars += chunk["char_count"]
+    print(
+        f"  -> {chunk_count} chunks, {total_chunk_chars} total chars across passages",
+        file=sys.stderr,
+    )
 
     # Step 2: Wikidata entity claims for each seed Q-ID, and 1-hop
     # neighbor entities (unless --seeds-only).
@@ -281,7 +397,9 @@ def main() -> int:
                 ef.write(json.dumps(entity, ensure_ascii=False) + "\n")
                 entity_count += 1
 
-    # Step 3: Manifest with captured-at, byte counts, SHA-256.
+    # Step 3: Manifest with captured-at, byte counts, SHA-256, chunking
+    # parameters, and counts. Per PACKET-034 §3.4 the manifest accounts
+    # for the chunked output.
     manifest = {
         "captured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "seed_list_count": len(SEED_LIST),
@@ -290,9 +408,16 @@ def main() -> int:
         "total_entities_fetched": entity_count,
         "limit": args.limit,
         "seeds_only": bool(args.seeds_only),
+        "chunking": {
+            "strategy": CHUNK_STRATEGY,
+            "target_chars": CHUNK_TARGET_CHARS,
+            "overlap_chars": CHUNK_OVERLAP_CHARS,
+            "chunk_count": chunk_count,
+            "total_chunk_chars": total_chunk_chars,
+        },
         "files": {},
     }
-    for f in (articles_path, entities_path):
+    for f in (articles_path, entities_path, chunks_path):
         if f.exists():
             content = f.read_bytes()
             manifest["files"][f.name] = {
