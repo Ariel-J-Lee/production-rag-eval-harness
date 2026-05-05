@@ -15,7 +15,7 @@ help:
 	@echo "  smoke-sparse       — sparse BM25 retrieval smoke against an in-tree fixture (tracks ROADMAP G2; pure stdlib)"
 	@echo "  smoke-hybrid       — hybrid (RRF over dense + sparse) retrieval smoke against an in-tree fixture (tracks ROADMAP G2; needs 'pip install -r requirements.txt')"
 	@echo "  smoke              — aggregated smoke tests per retrieval mode — not yet implemented (tracks ROADMAP G2)"
-	@echo "  eval               — full evaluation across all four modes — not yet implemented (tracks ROADMAP G1, G2, G7)"
+	@echo "  eval               — full evaluation across all four modes against the materialized corpus and Q-A set; writes runs/<run-id>/ artifacts (tracks ROADMAP G1, G2, G7; needs 'pip install -r requirements.txt' and 'make fetch')"
 	@echo "  regression         — regression gate against committed baseline — not yet implemented (tracks ROADMAP G8)"
 	@echo "  composition-check  — verify B7 deviation set against private composition — not yet implemented (tracks ROADMAP G10)"
 	@echo ""
@@ -35,8 +35,7 @@ smoke-hybrid:
 	@python3 -m src.retrieval.hybrid --smoke
 
 eval:
-	@echo "make eval: not yet implemented; tracks at ROADMAP.md gates G1, G2, G7."
-	@exit 2
+	@python3 -m src.eval.harness --chunks data/oss-ecosystem/chunks.jsonl --qa qa/qa_pairs.jsonl --runs-dir runs
 
 regression:
 	@echo "make regression: not yet implemented; tracks at ROADMAP.md gate G8."
