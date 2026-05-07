@@ -42,11 +42,11 @@ Designed to run on a laptop. The committed run has its corpus and Q-A snapshot S
 
 ## Limits
 
-This is a first scored proof, not a benchmark.
+This is a reference harness, not a benchmark.
 
 - **Corpus**: 1,659 chunks from a hand-seeded open-source software ecosystem slice. Results do not generalize beyond this slice.
 - **Q-A set**: 20 hand-curated pairs (lookup, relational, multi-step). Statistical confidence on cross-mode differences is bounded at this sample size.
-- **Faithfulness and answer correctness** are first-proof heuristic implementations: faithfulness is a binary token-overlap threshold against cited-passage tokens; answer correctness is SQuAD-style token-F1 against the gold answer. Graded LLM-judge variants are deferred.
+- **Faithfulness and answer correctness** are heuristic implementations: faithfulness is a binary token-overlap threshold against cited-passage tokens; answer correctness is SQuAD-style token-F1 against the gold answer. Graded LLM-judge variants are deferred.
 - **Answers are extractive**: every answer is the joined text of the top-3 retrieved passages, so the retrieval signal (Recall@k, MRR, citation metrics) is the load-bearing measurement. Generated-answer evaluation is deferred.
 - **Graph-aware mode underperforms** on this Q-A set because the entity-recognition step misses several queries; recovery is a follow-on tuning concern, not a contract issue. See the run report's method notes for the detail.
 - **Reproducibility** depends on the Wikipedia and Wikidata public-API state at fetch time; the pinned snapshot hashes in `manifest.json` define the reproducible boundary.
