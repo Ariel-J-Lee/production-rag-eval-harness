@@ -26,7 +26,8 @@ The committed first run (`2026-05-05_6d8256d1fe5c_seed-0`) compares the four ret
 - Dense and Hybrid lead on top-1 ranking (MRR 0.95 each).
 - Hybrid edges Dense on Recall@10 (0.28 vs 0.27).
 - Citation precision is highest for Dense (0.88) and lowest for Graph-aware (0.43).
-- Graph-aware underperforms on this Q-A set; see [Limits](#limits) and the [run report](./runs/2026-05-05_6d8256d1fe5c_seed-0/eval_report.md) for the per-metric table and method notes.
+- Graph-aware wins on 4 of 20 queries — most cleanly on lookup and relational questions whose answers depend on Wikidata properties (release year, developer, license) that vector embeddings cannot exploit; see [`raw_results.jsonl`](./runs/2026-05-05_6d8256d1fe5c_seed-0/raw_results.jsonl).
+- Graph-aware underperforms on this Q-A set in aggregate; see [Limits](#limits) and the [run report](./runs/2026-05-05_6d8256d1fe5c_seed-0/eval_report.md) for the per-metric table and method notes.
 
 The full four-row × seven-metric comparison and the citation contract live in [`runs/2026-05-05_6d8256d1fe5c_seed-0/eval_report.md`](./runs/2026-05-05_6d8256d1fe5c_seed-0/eval_report.md). Per-question results are in `raw_results.jsonl`; the deterministic-run manifest is in `manifest.json`.
 
